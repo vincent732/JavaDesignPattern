@@ -132,206 +132,89 @@ public class SingletonPatternDemo {
 
 * ## Builder pattern
 
-![Builder Pattern](https://www.tutorialspoint.com/design_pattern/images/builder_pattern_uml_diagram.jpg)
-
-> A Builder class builds the final object step by step. This builder is independent of other objects
-
->>Create an interface Item representing food item and packing.
-
+>> Suppose we have the following class named BackAccount, but if we want to add more parameters to the constructor, things will become more complicated.
 ```Java
-public interface Item {
-   public String name();
-   public Packing packing();
-   public float price();	
+public class BankAccount {
+    private long accountNumber;
+    private String owner;
+    private double balance;
+    public BankAccount(long accountNumber, String owner, double balance) {
+        this.accountNumber = accountNumber;
+        this.owner = owner;
+        this.balance = balance;
+    }
+    //Getters and setters omitted for brevity.
 }
 ```
 ```Java
-public interface Packing {
-   public String pack();
-}
+BankAccount account = new BankAccount(456L, "Marge", "Springfield", 100.00, 2.5);
+BankAccount anotherAccount = new BankAccount(789L, "Homer", null, 2.5, 100.00);  
 ```
->>Create concrete classes implementing the Packing interface.
+
+>> Instead, we can declare BankAccount like the following class. Please make sure the constructor of BankAccount is set to private.
 ```Java
-public class Wrapper implements Packing {
-
-   @Override
-   public String pack() {
-      return "Wrapper";
-   }
+public class BankAccount {
+    public static class Builder {
+        private long accountNumber; //This is important, so we'll pass it to the constructor.
+        private String owner;
+        private String branch;
+        private double balance;
+        private double interestRate;
+        public Builder(long accountNumber) {
+            this.accountNumber = accountNumber;
+        }
+        public Builder withOwner(String owner){
+            this.owner = owner;
+            return this;  //By returning the builder each time, we can create a fluent interface.
+        }
+        public Builder atBranch(String branch){
+            this.branch = branch;
+            return this;
+        }
+        public Builder openingBalance(double balance){
+            this.balance = balance;
+            return this;
+        }
+        public Builder atRate(double interestRate){
+            this.interestRate = interestRate;
+            return this;
+        }
+        public BankAccount build(){
+            //Here we create the actual bank account object, which is always in a fully initialised state when it's returned.
+            BankAccount account = new BankAccount();  //Since the builder is in the BankAccount class, we can invoke its private constructor.
+            account.accountNumber = this.accountNumber;
+            account.owner = this.owner;
+            account.branch = this.branch;
+            account.balance = this.balance;
+            account.interestRate = this.interestRate;
+            return account;
+        }
+    }
+    //Fields omitted for brevity.
+    private BankAccount() {
+        //Constructor is now private.
+    }
+    //Getters and setters omitted for brevity.
 }
 ```
 
-```Java
-public class Bottle implements Packing {
+>> Then we can create BankAccount like the flowing ones. We don't have to pass too many argument to the constructor anymore, and the code look more simple.
 
-   @Override
-   public String pack() {
-      return "Bottle";
-   }
-}
+
+```JAVA
+BankAccount account = new BankAccount.Builder(1234L)
+            .withOwner("Marge")
+            .atBranch("Springfield")
+            .openingBalance(100)
+            .atRate(2.5)
+            .build();
+BankAccount anotherAccount = new BankAccount.Builder(4567L)
+            .withOwner("Homer")
+            .atBranch("Springfield")
+            .openingBalance(100)
+            .atRate(2.5)
+            .build();
 ```
-
->>Create abstract classes implementing the item interface providing default functionalities
-
-```Java
-public abstract class Burger implements Item {
-
-   @Override
-   public Packing packing() {
-      return new Wrapper();
-   }
-
-   @Override
-   public abstract float price();
-}
-```
-```Java
-public abstract class ColdDrink implements Item {
-
-	@Override
-	public Packing packing() {
-       return new Bottle();
-	}
-
-	@Override
-	public abstract float price();
-}
-```
-
->>Create concrete classes extending Burger and ColdDrink classes
-```Java
-public class VegBurger extends Burger {
-
-   @Override
-   public float price() {
-      return 25.0f;
-   }
-
-   @Override
-   public String name() {
-      return "Veg Burger";
-   }
-}
-```
-```Java
-public class ChickenBurger extends Burger {
-
-   @Override
-   public float price() {
-      return 50.5f;
-   }
-
-   @Override
-   public String name() {
-      return "Chicken Burger";
-   }
-}
-```
-```Java
-public class Coke extends ColdDrink {
-
-   @Override
-   public float price() {
-      return 30.0f;
-   }
-
-   @Override
-   public String name() {
-      return "Coke";
-   }
-}
-```
-```Java
-public class Pepsi extends ColdDrink {
-
-   @Override
-   public float price() {
-      return 35.0f;
-   }
-
-   @Override
-   public String name() {
-      return "Pepsi";
-   }
-}
-```
-
->>Create a Meal class having Item objects defined above.
-
-```Java
-import java.util.ArrayList;
-import java.util.List;
-
-public class Meal {
-   private List<Item> items = new ArrayList<Item>();	
-
-   public void addItem(Item item){
-      items.add(item);
-   }
-
-   public float getCost(){
-      float cost = 0.0f;
-      
-      for (Item item : items) {
-         cost += item.price();
-      }		
-      return cost;
-   }
-
-   public void showItems(){
-   
-      for (Item item : items) {
-         System.out.print("Item : " + item.name());
-         System.out.print(", Packing : " + item.packing().pack());
-         System.out.println(", Price : " + item.price());
-      }		
-   }	
-}
-```
-
->>Create a MealBuilder class, the actual builder class responsible to create Meal objects.
-
-```Java
-public class MealBuilder {
-
-   public Meal prepareVegMeal (){
-      Meal meal = new Meal();
-      meal.addItem(new VegBurger());
-      meal.addItem(new Coke());
-      return meal;
-   }   
-
-   public Meal prepareNonVegMeal (){
-      Meal meal = new Meal();
-      meal.addItem(new ChickenBurger());
-      meal.addItem(new Pepsi());
-      return meal;
-   }
-}
-```
-
->>BuiderPatternDemo uses MealBuider to demonstrate builder pattern.
-
-```Java
-public class BuilderPatternDemo {
-   public static void main(String[] args) {
-   
-      MealBuilder mealBuilder = new MealBuilder();
-
-      Meal vegMeal = mealBuilder.prepareVegMeal();
-      System.out.println("Veg Meal");
-      vegMeal.showItems();
-      System.out.println("Total Cost: " + vegMeal.getCost());
-
-      Meal nonVegMeal = mealBuilder.prepareNonVegMeal();
-      System.out.println("\n\nNon-Veg Meal");
-      nonVegMeal.showItems();
-      System.out.println("Total Cost: " + nonVegMeal.getCost());
-   }
-}
-```
-
-
 
 
 # Structural Patterns
